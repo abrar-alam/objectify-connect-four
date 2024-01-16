@@ -14,17 +14,35 @@ class Game{
   #WIDTH; 
   #currPlayer = 1;// active player: 1 or 2
   #board = []; // array of rows, each row is array of cells  (board[y][x])
-
+  #gameover = false;
   constructor(height, width){
     this.#HEIGHT = height;
     this.#WIDTH = width;
     // this. currPlayer = 1; 
     // this.board = []; // array of rows, each row is array of cells  (board[y][x])
     //             // AA: Instance variable
+
+    this.#initialize();
+    // this.#setupGame();
+    
+  }
+
+
+  /** initialize: Load the new game button and add the click event listener to it which allows the user to start a new game */
+  #initialize(){
+    const startButton = document.getElementById('newgame-button'); 
+    // At the beginning the game board will be invisible unless the start game button is clicked
+    document.querySelector("#game").style.display = "none";
+    // add the event listener to the button
+    startButton.addEventListener("click", this.#handleButtonClick.bind(this));
+  }
+
+  /** setupGame: initializes the instance vars and HTML doms to start a new game */
+
+  #setupGame(){
     this.#makeBoard();
     this.#makeHtmlBoard();
   }
-
   /** makeBoard: create in-JS board structure:
  *   board = array of rows, each row is array of cells  (board[y][x])
  */
@@ -38,6 +56,7 @@ class Game{
 
   #makeHtmlBoard() {
     const board = document.getElementById('board');
+    
 
     // make column tops (clickable area for adding a piece to that column)
     const top = document.createElement('tr');
@@ -64,6 +83,11 @@ class Game{
 
       board.append(row);
     }
+
+    // // At the beginning the game board will be invisible unless the start game button is clicked
+    // board.style.display = "none";
+    // // add the event listener to the button
+    // startButton.addEventListener("click", this.#handleButtonClick.bind(this));
   }
 
   /** findSpotForCol: given column x, return top empty y (null if filled) */
@@ -95,34 +119,68 @@ class Game{
     alert(msg);
   }
 
+  /** eraseGameBoard: Removes the game board HTML elements to give the game board the default look */
+
+  #eraseGameBoard(){
+    const board = document.getElementById("board");
+    
+    // const parent = document.getElementById("foo")
+    while (board.firstChild) {
+      board.firstChild.remove();
+    }
+  }
+
+  /** handleButtonClick: handle click on the new game button. New game starts if this is clicked on */
+
+  #handleButtonClick(evt){
+    // First remove the doms
+    this.#eraseGameBoard();
+
+    // COnfigure the instance properties to default vals
+    this.#currPlayer = 1;
+    this.#board = [];
+    this.#gameover = false;
+
+    // Start a new game
+    this.#setupGame();
+
+    // Make the game board visible
+    document.querySelector("#game").style.display = "block";
+
+  }
   /** handleClick: handle click of column top to play piece */
 
   #handleClick(evt) {
-    // get x from ID of clicked cell
-    const x = +evt.target.id;
+    if (!this.#gameover){
+      // get x from ID of clicked cell
+      const x = +evt.target.id;
 
-    // get next spot in column (if none, ignore click)
-    const y = this.#findSpotForCol(x);
-    if (y === null) {
-      return;
+      // get next spot in column (if none, ignore click)
+      const y = this.#findSpotForCol(x);
+      if (y === null) {
+        return;
+      }
+
+      // place piece in board and add to HTML table
+      this.#board[y][x] = this.#currPlayer;
+      this.#placeInTable(y, x);
+
+      // check for win
+      if (this.#checkForWin()) {
+        this.#gameover = true;
+        return this.#endGame(`Player ${this.#currPlayer} won!`);
+      }
+
+      // check for tie
+      if (this.#board.every(row => row.every(cell => cell))) {
+        this.#gameover = true;
+        return this.#endGame('Tie!');
+      }
+
+      // switch players
+      this.#currPlayer = this.#currPlayer === 1 ? 2 : 1;
     }
-
-    // place piece in board and add to HTML table
-    this.#board[y][x] = this.#currPlayer;
-    this.#placeInTable(y, x);
-
-    // check for win
-    if (this.#checkForWin()) {
-      return this.#endGame(`Player ${this.#currPlayer} won!`);
-    }
-
-    // check for tie
-    if (this.#board.every(row => row.every(cell => cell))) {
-      return this.#endGame('Tie!');
-    }
-
-    // switch players
-    this.#currPlayer = this.#currPlayer === 1 ? 2 : 1;
+    
   }
 
   /** checkForWin: check board cell-by-cell for "does a win start here?" */
