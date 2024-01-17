@@ -12,19 +12,14 @@ class Game{
 
   #HEIGHT;
   #WIDTH; 
-  #currPlayer = 1;// active player: 1 or 2
+  #players = [null, null]; //Will store 2 different player info
+  #currPlayer = null;// active player: 1 or 2
   #board = []; // array of rows, each row is array of cells  (board[y][x])
   #gameover = false;
   constructor(height, width){
     this.#HEIGHT = height;
     this.#WIDTH = width;
-    // this. currPlayer = 1; 
-    // this.board = []; // array of rows, each row is array of cells  (board[y][x])
-    //             // AA: Instance variable
-
     this.#initialize();
-    // this.#setupGame();
-    
   }
 
 
@@ -41,7 +36,21 @@ class Game{
 
   #setupGame(){
     this.#makeBoard();
+    this.#makePlayers();
     this.#makeHtmlBoard();
+  }
+
+  /**makePlayers: Creates two player instances and add them to the Game object */
+  #makePlayers(){
+    const playerOne = new Player(document.getElementById('p1-color').value);
+    const playerTwo = new Player(document.getElementById('p2-color').value); 
+    
+    //First clear the players from previous game
+    this.#players.length = 0;
+    
+    // Now add in the players
+    this.#players.push(playerOne, playerTwo);
+    this.#currPlayer = playerOne;
   }
   /** makeBoard: create in-JS board structure:
  *   board = array of rows, each row is array of cells  (board[y][x])
@@ -57,7 +66,6 @@ class Game{
   #makeHtmlBoard() {
     const board = document.getElementById('board');
     
-
     // make column tops (clickable area for adding a piece to that column)
     const top = document.createElement('tr');
     top.setAttribute('id', 'column-top');
@@ -83,11 +91,6 @@ class Game{
 
       board.append(row);
     }
-
-    // // At the beginning the game board will be invisible unless the start game button is clicked
-    // board.style.display = "none";
-    // // add the event listener to the button
-    // startButton.addEventListener("click", this.#handleButtonClick.bind(this));
   }
 
   /** findSpotForCol: given column x, return top empty y (null if filled) */
@@ -101,14 +104,20 @@ class Game{
     return null;
   }
 
+  /** generatePlayerID: Generates a pseudo ID for the current player. player at idx 0 gets ID of 0, player at idx 1 gets the ID of 1*/
+  #generatePlayerID(players, currentPlayer){
+    return  currentPlayer === players[0] ? 1 : 2;
+  }
+
   /** placeInTable: update DOM to place piece into HTML table of board */
 
   #placeInTable(y, x) {
+    const currPlayer = this.#generatePlayerID(this.#players, this.#currPlayer);
     const piece = document.createElement('div');
     piece.classList.add('piece');
-    piece.classList.add(`p${this.#currPlayer}`);
+    piece.classList.add(`p${currPlayer}`);
     piece.style.top = -50 * (y + 2);
-
+    piece.style.backgroundColor = currPlayer === 1 ? this.#players[0].color : this.#players[1].color;
     const spot = document.getElementById(`${y}-${x}`);
     spot.append(piece);
   }
@@ -123,8 +132,6 @@ class Game{
 
   #eraseGameBoard(){
     const board = document.getElementById("board");
-    
-    // const parent = document.getElementById("foo")
     while (board.firstChild) {
       board.firstChild.remove();
     }
@@ -133,11 +140,11 @@ class Game{
   /** handleButtonClick: handle click on the new game button. New game starts if this is clicked on */
 
   #handleButtonClick(evt){
+    evt.preventDefault();
     // First remove the doms
     this.#eraseGameBoard();
 
     // COnfigure the instance properties to default vals
-    this.#currPlayer = 1;
     this.#board = [];
     this.#gameover = false;
 
@@ -162,13 +169,13 @@ class Game{
       }
 
       // place piece in board and add to HTML table
-      this.#board[y][x] = this.#currPlayer;
+      this.#board[y][x] = this.#generatePlayerID(this.#players, this.#currPlayer);
       this.#placeInTable(y, x);
 
       // check for win
       if (this.#checkForWin()) {
         this.#gameover = true;
-        return this.#endGame(`Player ${this.#currPlayer} won!`);
+        return this.#endGame(`Player ${this.#generatePlayerID(this.#players, this.#currPlayer)} won!`);
       }
 
       // check for tie
@@ -178,7 +185,7 @@ class Game{
       }
 
       // switch players
-      this.#currPlayer = this.#currPlayer === 1 ? 2 : 1;
+      this.#currPlayer = this.#generatePlayerID(this.#players, this.#currPlayer) === 1 ? this.#players[1] : this.#players[0];
     }
     
   }
@@ -197,7 +204,7 @@ class Game{
           y < this.#HEIGHT &&
           x >= 0 &&
           x < this.#WIDTH &&
-          this.#board[y][x] === this.#currPlayer
+          this.#board[y][x] === this.#generatePlayerID(this.#players, this.#currPlayer)
       );
     }
 
@@ -219,6 +226,14 @@ class Game{
       }
     }
 
+  }
+}
+
+class Player {
+  color;
+
+  constructor(color){
+    this.color = color;
   }
 }
 
